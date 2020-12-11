@@ -62,7 +62,7 @@ void xor_try(const std::string& str) {
     shift.set(x);
     //std::cout << "---insert_#---" << std::endl;
     //std::cout << common_word << std::endl;
-    //shift.display();
+    shift.display();
 }
 
 
