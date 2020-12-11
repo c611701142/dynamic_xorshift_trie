@@ -37,22 +37,22 @@ void xor_try(const std::string& str) {
         int parity2 = x1 % 256;//本来のパリティ値
         //std::cout << "-----try start----" << std::endl;
         //std::cout << "x : " << x1 << std::endl;
-        //std::cout << "seed : " << x << std::endl;
+        std::cout << "seed : " << x << std::endl;
         //std::cout << "P : " << parity << std::endl;
         //std::cout << "c: " << collision << std::endl;
         //std::cout << "t: " << t << std::endl;
-        //std::cout << "s : t " << node << " --> " << t << std::endl;
+        std::cout << "s : t " << node << " --> " << t << std::endl;
         //std::cout << "-----try end----" << std::endl;
         //接頭辞共有
         //使用要素かつパリティ値が一致 (遷移先候補のみがかぶる可能性があるので)
         //if(parity != -1 && collision != -1){
         if(shift.exists[t] && parity == parity2){    
             node = t;
-            //std::cout << "--common--" << "\n";
+            std::cout << "--common--" << "\n";
             common_word++;
         }
         else{
-            //std::cout << "---new_node---" << std::endl;
+            std::cout << "---new_node---" << std::endl;
             shift.set(x);
             node = t;
         }
@@ -62,7 +62,7 @@ void xor_try(const std::string& str) {
     shift.set(x);
     //std::cout << "---insert_#---" << std::endl;
     //std::cout << common_word << std::endl;
-    shift.display();
+    //shift.display();
 }
 
 
