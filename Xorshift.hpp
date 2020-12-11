@@ -20,7 +20,7 @@ public:
 static constexpr int null = -1;//データが入っていないことを示す値
 static constexpr int invalid = -1;
 static constexpr int invalid_key = -1;
-static constexpr uint64_t default_size = std::pow(2,24);
+static constexpr uint64_t default_size = std::pow(2,5);
 Xorshift(){
 	pc_.resize(default_size);
 	exists.resize(default_size,false);
@@ -69,8 +69,8 @@ void display(){
         //使用要素のみ表示
         if(exists[i]){
         node_count++;
-        //std::cout << i << "    " << exists[i] << "       ";
-        //std::cout << pc_[i].p << "  |  " << pc_[i].c << std::endl;
+        std::cout << i << "    " << exists[i] << "       ";
+        std::cout << pc_[i].p << "  |  " << pc_[i].c << std::endl;
         //配列番号 
         }
     }
@@ -148,9 +148,9 @@ void set(uint64_t x){//引数 : シード値
     //std::cout << "c : " << collision << std::endl;
     //std::cout << "insert- data"<< default_size << std::endl;                  
 	//std::cout << "SIZE = "<< pc_.size() << "  2^" << k <<  std::endl;
-    std::cout << "SIZE : " << pc_.size() << std::endl;
-    std::cout << "k : " << k << std::endl;
-    std::cout << "defalt : " << default_size << std::endl;
+    //std::cout << "SIZE : " << pc_.size() << std::endl;
+    //std::cout << "k : " << k << std::endl;
+    //std::cout << "defalt : " << default_size << std::endl;
 	}
 
 
