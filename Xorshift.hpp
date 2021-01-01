@@ -44,6 +44,64 @@ std::vector<DataItem> pc_ ;//P,C配列
 std::vector<bool> exists;//空判定配列
 
 private:
+void expand_resize(){
+    std::cout << "before table" << pc_.size() << "  " << k << std::endl;
+    display();
+	//出力値を遷移先候補とパリティ値から復元する
+    std::vector<DataItem> pc_2(2*pc_.size());//P,C配列
+    std::vector<bool> exists2(2*pc_.size());//空判定配列
+    std::vector<int> replace(1,0);//再配置した節の数を記録
+    exists2[0] = true;//0番目は使わない
+    int s = 0;uint8_t c = 0;
+    int new_t = 0;//成長後の配列の要素の番号
+    for(int i = 0;i < pc_.size();i++){
+        if(exists[i]){//使用要素
+            s = get_parent(i);
+            c = get_charcode(i);
+            //std::cout << i << "sssssssssssssss" << s << std::endl;
+            k++;
+            for(int j = 0;j < replace.size();j++){
+                int parent = replace[j];//配置済み要素を親として、回していく
+                //std::cout << "  親選び " << std::endl;
+                //std::cout << "  parent " << parent << std::endl;
+                //std::cout << i << "  " << s << std::endl;
+                if(s == parent){//set
+                    uint64_t x1 = xos((s << 8) + c);//新しい出力値
+                    new_t = x1 >> 8;//新しい遷移先
+                    int collision = 0;
+                    while(exists2[new_t]){//使用済みならば再Xos
+                        x1 = xos(x1);//出力値をxorに再代入s
+                        new_t = x1 >> 8;
+                        collision++;   
+                    }
+                    int parity = x1 % 256;
+                    pc_2[new_t].p = parity;
+                    pc_2[new_t].c = collision;
+                    exists2[new_t] = true;
+                    exists[i] = false;
+                    std::cout << c << "   change_char   " << s << std::endl;
+                    std::cout << i << "   change to   " << new_t << std::endl;
+                    replace.emplace_back(i);
+                }//親から再配置(まずは0からの遷移)
+            } 
+            k--;//get_parentsでのxos,ixosのため、マスクを拡張前にもどす
+        }//使用要素
+        if(i == pc_.size()-1 && replace.size() != hash_use + 1){//右端まで行って見つからなかった時
+            //std::cout << "やり直し"<< std::endl;
+            i = 0;        
+        }
+        if(replace.size() == hash_use + 1){
+            std::cout << "再配置済み" <<  replace.size() -1 << std::endl;
+            break;
+        }
+    }
+    k++;//最終的に、マスク＋１に更新する
+    pc_ = std::move(pc_2);
+    exists = std::move(exists2);
+    std::cout << "after_expand" <<  pc_.size() << "  " << k << std::endl;
+    display();
+} 
+
 int get_seed(int t)const{//配列番号、パリティ値、衝突回数からシード値を得る
     uint64_t x = 0;
     if(pc_[t].c == 0){
@@ -59,56 +117,6 @@ int get_seed(int t)const{//配列番号、パリティ値、衝突回数から�
     return seed;
 }//ここから、親と遷移文字が分かる
 
-void expand_resize(){
-    std::cout << "before table" << pc_.size() << "  " << k << std::endl;
-    //display();
-	//出力値を遷移先候補とパリティ値から復元する
-    std::vector<DataItem> pc_2(2*pc_.size());//P,C配列
-    std::vector<bool> exists2(2*pc_.size());//空判定配列
-    exists2[0] = true;//0番目は使わない
-    int parent = 0;uint8_t c = 0;
-    int replace = hash_use;
-    for(int i = 1;i < pc_.size();i++){
-        std::vector<uint8_t> codes;
-        if(exists[i]){//使用要素
-            int s = get_parent(i);
-            c = get_charcode(i);
-            k++;
-            int new_t = 0;
-            if(s == parent){//set
-                uint64_t x1 = xos((s << 8) + c);//新しい出力値
-                new_t = x1 >> 8;//新しい遷移先
-                int collision = 0;
-                while(exists2[new_t]){//使用済みならば再Xos
-                    x1 = xos(x1);//出力値をxorに再代入
-		            new_t = x1 >> 8;
-                    collision++;   
-                }
-            int parity = x1 % 256;
-            pc_2[new_t].p = parity;
-            pc_2[new_t].c = collision;
-            exists2[new_t] = true;
-            parent = i;//10,13を親として、14,3,10番目の配列にアクセスしたい
-            i = 1;//もう一度右から探索
-            replace--;
-            }//親から再配置(まずは0からの遷移)
-            k--;//get_parentsでのxos,ixosのため、マスクをもとにもどす
-        }
-        if(i == pc_.size()-1 && replace != 0){//左端まで行ってまだ残ってたら
-                exists[parent] = false; 
-                i = 1;
-                parent = 0;
-        }
-        //std::cout << replace << "\n";
-        if(replace == 0){
-            break;
-        }
-    }
-    k++;//最終的に、マスク＋１に更新する
-    pc_ = std::move(pc_2);
-    exists = std::move(exists2);
-    //display();
-} 
 int get_parent(int t){//子の状態番号→出力値→シード値→親番号
     uint64_t seed = get_seed(t);
     return seed >> 8;
@@ -134,6 +142,7 @@ void display(){
         }
     }
     std::cout << "collision_max" << collision_max << std::endl;
+    std::cout << "k :" << k << std::endl;
 }
 
 //get関数ですが、今はそのまま返しているだけです
@@ -149,7 +158,7 @@ int get_parity(uint64_t x)const{//引数シード値
         t = x1 >> 8;//遷移先
         parity = x1 % 256;
     }
-	return pc_[t].p;
+	return -1;
 }
 
 int get_collision(uint64_t x)const{//引数シード値
@@ -164,7 +173,7 @@ int get_collision(uint64_t x)const{//引数シード値
         t = x1 >> 8;//遷移先
         parity = x1 % 256;
     }
-	return pc_[t].c;
+	return -1;
 }
 int get_nextnode(uint64_t x)const{//引数シード値
 	uint64_t x1 = xos(x);
@@ -178,7 +187,7 @@ int get_nextnode(uint64_t x)const{//引数シード値
         t = x1 >> 8;//遷移先
         parity = x1 % 256;
     }
-	return  t;
+	return -1;
 }
 
 private:
@@ -234,7 +243,6 @@ void set(uint64_t seed){//引数 : シード値
     if(load_factor >= 50){
         expand_resize();
         int load_factor2 = hash_use*100/pc_.size();
-        std::cout << "after_expand" << load_factor2 << "%" << std::endl;
     }
     uint64_t x1 = xos(seed);
     int t = x1 >> 8;//遷移先候補 8桁目以降  koko12
@@ -249,6 +257,7 @@ void set(uint64_t seed){//引数 : シード値
     pc_[t].c = collision;
     exists[t] = true;
 	hash_use++;
+    std::cout << "trans    " << t << std::endl;
 }
 
 };

@@ -24,14 +24,13 @@ int node_count = 0;
 public:
 void xor_try(const std::string& str) {
     int node = 0;
-    int collision = 0;
-    int parity = 0;
-    //std::cout << "-----key_word-------" << str << std::endl;
+    std::cout << "-----key_word-------" << str << std::endl;
     for (uint8_t c : str) {
+        std::cout << "word  ***  " << c << std::endl;
         int t = shift.get_nextnode(create_seed(node,c));
-        if(shift.exists[t]){    
+        if(t != -1){    
             node = t;
-            //std::cout << "--common--" << "\n";
+            std::cout << "--common--" << "\n";
         }
         else{
            // std::cout << "---new_node---" << std::endl;
