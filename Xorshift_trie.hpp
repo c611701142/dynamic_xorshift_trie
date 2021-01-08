@@ -26,16 +26,13 @@ void xor_try(const std::string& str) {
     int node = 0;
     std::cout << "-----key_word-------" << str << std::endl;
     for (uint8_t c : str) {
-        std::cout << "word  ***  " << c << std::endl;
         int t = shift.get_nextnode(create_seed(node,c));
         if(t != -1){    
             node = t;
             std::cout << "--common--" << "\n";
         }
         else{
-            std::cout << "---new_node---" << std::endl;
             shift.set(create_seed(node,c));
-            //std::cout << "new s : new t " << node << " --> " << t << std::endl;
             node = shift.get_nextnode(create_seed(node,c));//衝突回数の分修正する
             node_count++;
         }
@@ -43,7 +40,6 @@ void xor_try(const std::string& str) {
     //終端文字格納
     shift.set(create_seed(node,kLeafChar));
     node_count++;
-    int t = shift.get_nextnode(create_seed(node,kLeafChar));
     shift.display();
     std::cout << "node : " << node_count << std::endl;
 }

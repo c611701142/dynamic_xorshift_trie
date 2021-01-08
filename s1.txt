@@ -1,4 +1,2 @@
-black
 blue
-green
-red
+black
