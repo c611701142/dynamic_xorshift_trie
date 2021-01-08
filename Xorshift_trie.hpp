@@ -38,7 +38,7 @@ void xor_try(const std::string& str) {
         }
     }
     //終端文字格納
-    shift.set(create_seed(node,kLeafChar));
+    //shift.set(create_seed(node,kLeafChar));
     node_count++;
     shift.display();
     std::cout << "node : " << node_count << std::endl;

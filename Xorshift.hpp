@@ -41,6 +41,8 @@ struct DataItem {
 std::vector<DataItem> pc_ ;//P,C配列
 std::vector<bool> exists;//空判定配列
 std::vector<int> place;
+int ex_parent = 0;
+//再配置が起こるタイミングの番号を保存、シード値を更新する
 //setとexpandで共有する配列 "place[旧index] = 新index"
 
 private:
@@ -76,6 +78,10 @@ void expand(){
                     pc_2[new_t].c = collision;
                     exists2[new_t] = true;
                     exists[s] = false;
+                    if(s == ex_parent){
+                        ex_parent = new_t;//
+                        std::cout << "状態番号更新" << std::endl;
+                    }
                     k--;//get_parentsでのxos,ixosのため、マスクを拡張前にもどす
                     std::cout << "   change_char   " << c << std::endl;
                     std::cout << "   change_number   " << s << std::endl;
@@ -95,11 +101,11 @@ void expand(){
 
 //再配置で使う再帰関数
 int replace(int node){
-    std::cout << "調べ中" << node << std::endl;
+    //std::cout << "調べ中" << node << std::endl;
     if(node == 0 || !exists[node]) return -1;//nodeは配置済み
     else if(node != 0 && exists[node]){
         place.insert(place.begin(),node);
-        std::cout << " parent =  " << node << std::endl;
+        //std::cout << " parent =  " << node << std::endl;
         node = get_parent(node);
         return replace(node);
     }
@@ -117,6 +123,7 @@ int get_seed(int t)const{//配列番号、パリティ値、衝突回数から�
         }
     }
     uint64_t seed = ixos(x);
+    //std::cout << t << " 　　 " << seed << std::endl;
     return seed;
 }//ここから、親と遷移文字が分かる
 
@@ -148,7 +155,7 @@ void display(){
                 collision_max = pc_[i].c;
             }
         std::cout << i << "    " << exists[i] << "       ";
-        std::cout << pc_[i].p << "  |  " << pc_[i].c << std::endl;
+        std::cout << pc_[i].p << "  |  " << pc_[i].c << "  " << get_charcode(i) << std::endl;
         //配列番号 
         }
     }
@@ -250,7 +257,11 @@ void set(uint64_t seed){//引数 : シード値
 	int load_factor = hash_use*100/pc_.size();
     //keyによる探索の期待計算量が、負荷率をqとしてO(1/(1-q))になる
     if(load_factor >= 50){
+        ex_parent = seed >> 8;//前の親番号を保存しておく
+        uint8_t c = seed % 256;//遷移文字保存
         expand();
+        //ex_parentはexpandでnew_tに更新
+        seed = (ex_parent << 8) + c;//シード値(親番号)を更新する
         int load_factor2 = hash_use*100/pc_.size();
     }
     uint64_t x1 = xos(seed);
@@ -266,7 +277,6 @@ void set(uint64_t seed){//引数 : シード値
     pc_[t].c = collision;
     exists[t] = true;
 	hash_use++;
-    //place.emplace_back(t);
     std::cout << t << "配置" << get_charcode(t) << std::endl;
 }
 
