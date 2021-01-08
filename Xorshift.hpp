@@ -1,3 +1,5 @@
+#ifndef OPEN_ADRESS__HASHING_HPP_
+#define OPEN_ADRESS__HASHING_HPP_
 #include <iostream>
 #include <vector>
 #include <cmath>
@@ -19,7 +21,7 @@ static constexpr int null = -1;//データが入っていないことを示す�
 static constexpr int invalid = -1;
 static constexpr int invalid_key = -1;
 static constexpr uint64_t default_size = std::pow(2,4);
-	
+static constexpr uint8_t MaxUint8_t = 0xFF;//255　文字コード最大
 Xorshift(){
 	pc_.resize(default_size);
 	exists.resize(default_size,false);
@@ -28,9 +30,10 @@ Xorshift(){
 
 private:
 std::vector<int> B_ = {13,-7,5};//ビットシフトパターン
-std::vector<int> B_1 = {5,-7,13};//ビットシフトパターン(逆関数用)
+std::vector<int> B_1 = {5,-7,13};//ビットシフトパターン(32ビット)
 int hash_use = 0;//配列P,C の使用数
 int k = (std::log(default_size)/std::log(2)) + 8;//mask値の決定のため、P, C 拡張時にインクリメント
+//対数でkを決める()
 
 public:
 struct DataItem {
@@ -54,7 +57,7 @@ void expand_resize(){
     for(int i = 0;i < pc_.size();i++){
         if(exists[i]){//使用要素
             s = get_parent(i);
-            c = get_charcode(i);//確認用です。条件で使用しないので、あとで消します。
+            c = get_charcode(i);
             //std::cout << i << "sssssssssssssss" << s << std::endl;
             k++;
             for(int j = 0;j < replace.size();j++){
@@ -88,7 +91,7 @@ void expand_resize(){
             i = 0;        
         }
         if(replace.size() == hash_use + 1){
-            //std::cout << "再配置完了" <<  replace.size() -1 << std::endl;
+            std::cout << "再配置済み" <<  replace.size() -1 << std::endl;
             break;
         }
     }
@@ -123,6 +126,49 @@ uint8_t get_charcode(int t){//子の状態番号→出力値→シード値→�
     return seed % 256;
 }
 
+uint64_t xos(uint64_t x)const{//前&x
+    uint64_t maskXos_ = 1ull << k;
+	for(int b: B_){//ビットシフトパターン{a,b}なら先にa次にbの２回ループ
+        //std::cout << "shift patern , seed" << b << "," << x << "\n";
+		if(b >= 0){
+			x = (x ^ (x << b)) % maskXos_;
+		}
+		else if(b < 0){
+			x = (x ^ (x >> -b)) % maskXos_;
+        }
+	}
+	return x;
+}
+
+int bit_len(uint32_t x)const{
+    assert(x > 0);
+    int n = 0;
+    while ((1ull<<n) <= x-1)
+        ++n;
+    return n;
+}
+
+int loop_time(int k,int b)const{
+	assert(k > 0 and b > 0);
+    return 1 << bit_len((k-1) / b + 1);
+}
+
+uint64_t ixos(uint64_t x)const{//前シード値から出力
+    uint64_t maskXos_ = 1ull << k;
+	//xorの回数は2^ceil(log2(k/b))
+	for(int b: B_1){
+		int n = loop_time(k, abs(b)) - 1;
+		for(int i = 0;i < n;i++){
+			if(b >= 0){
+				x = (x ^ (x << b)) % maskXos_;
+			}
+			else if(b < 0){
+				x = (x ^ (x >> -b)) % maskXos_;
+			}
+		}
+	}
+	return x;
+} 
 
 public:
 void display(){
@@ -142,6 +188,7 @@ void display(){
     std::cout << "k :" << k << std::endl;
 }
 
+//get関数ですが、今はそのまま返しているだけです
 int get_parity(uint64_t x)const{//引数シード値
     uint64_t x1 = xos(x);
     int t = x1 >> 8;//遷移先
@@ -186,51 +233,7 @@ int get_nextnode(uint64_t x)const{//引数シード値
 	return -1;
 }
 
-private:
-uint64_t xos(uint64_t x)const{//前&x
-    uint64_t maskXos_ = 1ull << k;
-	for(int b: B_){
-		if(b >= 0){
-			x = (x ^ (x << b)) % maskXos_;
-		}
-		else if(b < 0){
-			x = (x ^ (x >> -b)) % maskXos_;
-        }
-	}
-	return x;
-}
 
-int bit_len(uint32_t x)const{
-    assert(x > 0);
-    int n = 0;
-    while ((1ull<<n) <= x-1)
-        ++n;
-    return n;
-}
-
-int loop_time(int k,int b)const{
-	assert(k > 0 and b > 0);
-    return 1 << bit_len((k-1) / b + 1);
-}
-
-uint64_t ixos(uint64_t x)const{//前シード値から出力
-    uint64_t maskXos_ = 1ull << k;
-	//xorの回数は2^ceil(log2(k/b))
-	for(int b: B_1){
-		int n = loop_time(k, abs(b)) - 1;
-		for(int i = 0;i < n;i++){
-			if(b >= 0){
-				x = (x ^ (x << b)) % maskXos_;
-			}
-			else if(b < 0){
-				x = (x ^ (x >> -b)) % maskXos_;
-			}
-		}
-	}
-	return x;
-} 
-
-public:
 //配列P,Cに要素を格納、衝突が起これば再配置
 void set(uint64_t seed){//引数 : シード値
 	int load_factor = hash_use*100/pc_.size();
@@ -252,8 +255,10 @@ void set(uint64_t seed){//引数 : シード値
     pc_[t].c = collision;
     exists[t] = true;
 	hash_use++;
+    std::cout << "trans    " << t << std::endl;
 }
 
 };
 
 }
+#endif //OPEN_ADRESS__HASHING_HP
