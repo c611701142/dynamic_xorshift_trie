@@ -18,7 +18,7 @@ public:
 static constexpr int null = -1;//データが入っていないことを示す値
 static constexpr int invalid = -1;
 static constexpr int invalid_key = -1;
-static constexpr uint64_t default_size = std::pow(2,4);
+static constexpr uint64_t default_size = 1<<4;
 	
 Xorshift(){
 	pc_.resize(default_size);
@@ -56,41 +56,39 @@ void expand(){
     int s = 0;uint8_t c = 0;
     int new_t = 0;//成長後の配列の要素の番号
     for(int i = 1;i < pc_.size();i++){
-        if(exists[i]){//使用要素
-            if(replace(i) == -1){//親が再配置されていない
-                //std::cout << " 再配置開始 " << place.size() <<  std::endl;
-                //std::cout << i << "      " << get_charcode(i) << std::endl;
-                //std::cout << i << "格納します" << std::endl;
-                for(int j = 0;j < place.size() ;j++){//-1になった経路を再配置
-                    //std::cout << " jjjjj " << place[j] << std::endl;
-                    s = place[j];c = get_charcode(s);
-                    k++;//mask更新
-                    uint64_t x1 = xos((s << 8) + c);//新しい出力値
-                    new_t = x1 >> 8;//新しい遷移先
-                    int collision = 0;
-                    while(exists2[new_t]){//使用済みならば再Xos
-                        x1 = xos(x1);//出力値をxorに再代入s
-                        new_t = x1 >> 8;
-                        collision++;   
-                    }
-                    int parity = x1 % 256;
-                    pc_2[new_t].p = parity;
-                    pc_2[new_t].c = collision;
-                    exists2[new_t] = true;
-                    exists[s] = false;
-                    if(s == ex_parent){
-                        ex_parent = new_t;//
-                        std::cout << "状態番号更新" << std::endl;
-                    }
-                    k--;//get_parentsでのxos,ixosのため、マスクを拡張前にもどす
-                    std::cout << "   change_char   " << c << std::endl;
-                    std::cout << "   change_number   " << s << std::endl;
-                    std::cout << " new " << new_t << std::endl;
-                }
-                place.clear();
-                std::cout << place.size() << std::endl;
-            }//親から再配置(まずは0からの遷移)
-        }//使用要素
+        if (!exists[i] or replace(i) != -1)
+            continue;
+        //std::cout << " 再配置開始 " << place.size() <<  std::endl;
+        //std::cout << i << "      " << get_charcode(i) << std::endl;
+        //std::cout << i << "格納します" << std::endl;
+        for(int j = 0;j < place.size() ;j++){//-1になった経路を再配置
+            //std::cout << " jjjjj " << place[j] << std::endl;
+            s = place[j];c = get_charcode(s);
+            k++;//mask更新
+            uint64_t x1 = xos((s << 8) + c);//新しい出力値
+            new_t = x1 >> 8;//新しい遷移先
+            int collision = 0;
+            while(exists2[new_t]){//使用済みならば再Xos
+                x1 = xos(x1);//出力値をxorに再代入s
+                new_t = x1 >> 8;
+                collision++;
+            }
+            int parity = x1 % 256;
+            pc_2[new_t].p = parity;
+            pc_2[new_t].c = collision;
+            exists2[new_t] = true;
+            exists[s] = false;
+            if(s == ex_parent){
+                ex_parent = new_t;//
+                std::cout << "状態番号更新" << std::endl;
+            }
+            k--;//get_parentsでのxos,ixosのため、マスクを拡張前にもどす
+            std::cout << "   change_char   " << c << std::endl;
+            std::cout << "   change_number   " << s << std::endl;
+            std::cout << " new " << new_t << std::endl;
+        }
+        place.clear();
+        std::cout << place.size() << std::endl;
     }
     k++;//最終的に、マスク＋１に更新する
     pc_ = std::move(pc_2);
@@ -135,7 +133,7 @@ int get_parent(int t){//子の状態番号→出力値→シード値→親番�
         return -1;
     }
     else{
-    uint64_t seed = get_seed(t);
+        uint64_t seed = get_seed(t);
         return seed >> 8;
     }
 }
@@ -154,16 +152,16 @@ void display(){
             if(collision_max < pc_[i].c){
                 collision_max = pc_[i].c;
             }
-        std::cout << i << "    " << exists[i] << "       ";
-        std::cout << pc_[i].p << "  |  " << pc_[i].c << "  " << get_charcode(i) << std::endl;
-        //配列番号 
+            std::cout << i << "    " << exists[i] << "       ";
+            std::cout << pc_[i].p << "  |  " << pc_[i].c << "  " << get_charcode(i) << std::endl;
+            //配列番号
         }
     }
     std::cout << "collision_max" << collision_max << std::endl;
     std::cout << "mask :" << k << std::endl;
 }
 
-int get_parity(uint64_t x)const{//引数シード値
+int get_parity(uint64_t x)const override{//引数シード値
     uint64_t x1 = xos(x);
     int t = x1 >> 8;//遷移先
     int parity = x1 % 256;
@@ -178,7 +176,7 @@ int get_parity(uint64_t x)const{//引数シード値
 	return -1;
 }
 
-int get_collision(uint64_t x)const{//引数シード値
+int get_collision(uint64_t x)const override{//引数シード値
     uint64_t x1 = xos(x);
     int t = x1 >> 8;//遷移先
     int parity = x1 % 256;
