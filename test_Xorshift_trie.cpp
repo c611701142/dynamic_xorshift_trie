@@ -8,7 +8,7 @@ int main(int argc, char* argv[]){
     int num = 0;
     std::cout << "file_number" << "\n";
     std::cin >> num;
-    std::string input_name = std::string("s")+char(num+'0')+".txt";
+    std::string input_name = std::string("../s")+char(num+'0')+".txt";
     std::ifstream ifs(input_name);
     if (!ifs) {
         std::cerr<<"File not found input file: "<<input_name<<std::endl;
