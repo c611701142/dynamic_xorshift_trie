@@ -18,7 +18,7 @@ public:
 static constexpr int null = -1;//データが入っていないことを示す値
 static constexpr int invalid = -1;
 static constexpr int invalid_key = -1;
-static constexpr uint64_t default_size = 1<<4;
+static constexpr int default_size = 1 << 15;
 	
 Xorshift(){
 	pc_.resize(default_size);
@@ -58,10 +58,8 @@ int expand(int node){
     exists2[0] = true;//0番目は使わない
     int s = 0;uint8_t c = 0;
     int new_t = 0;//成長後の配列の要素の番号
-   // std::cout << " re_place start " <<  std::endl;
     for(int i = 1;i < pc_.size();i++){
         if (!exists[i] or replace(i,place,pc_2,exists2) != -1){
-            //std::cout << i << "access point" << std::endl;
             continue;
         }
     }
@@ -69,11 +67,6 @@ int expand(int node){
     pc_ = std::move(pc_2);
     exists = std::move(exists2);
     //display();
-    //std::cout <<  "--------------------------------------------------------"  << std::endl;
-    //for(int i = 0;i < place.size();i++){
-    //    std::cout << place[i] <<  "    "  << i << std::endl;
-    // }
-    //std::cout <<  "--------------------------------------------------------"  << std::endl;
     return place[node];
 } 
 
@@ -118,7 +111,6 @@ int get_seed(int t)const{//配列番号、パリティ値、衝突回数から�
         }
     }
     uint64_t seed = ixos(x);
-    //std::cout << t << " 　　 " << seed << std::endl;
     return seed;
 }//ここから、親と遷移文字が分かる
 
@@ -259,11 +251,11 @@ int set(int node,uint8_t c){//引数 : シード値
     //keyによる探索の期待計算量が、負荷率をqとしてO(1/(1-q))になる
     if(load_factor >= 50){
         node = expand(node);
-        //std::cout << (seed >> 8) <<  "    " << std::endl;
+        std::cout <<  "replace" << std::endl;
         uint64_t load_factor2 = hash_use*100/pc_.size();
     }
     uint64_t seed = create_seed(node,c);
-    std::cout << node <<  "    " << c << std::endl;
+    //std::cout << node <<  "    " << c << std::endl;
     uint64_t x1 = xos(seed);
     int t = x1 >> 8;//遷移先候補 8桁目以降 
     int collision = 0;
