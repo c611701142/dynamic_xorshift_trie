@@ -9,16 +9,14 @@ namespace kuroda {
 class XorshiftInterface {
 public:
    virtual int get_parity(uint64_t x)const = 0;
-   virtual int get_collision(uint64_t x)const = 0;
+   
    virtual int set(int node,uint8_t c) = 0;
 };
 
 class Xorshift : public XorshiftInterface{
 public:
-static constexpr int null = -1;//データが入っていないことを示す値
 static constexpr int invalid = -1;
-static constexpr int invalid_key = -1;
-static constexpr int default_size = 1 << 15;
+static constexpr int default_size = 1 << 21;
 	
 Xorshift(){
 	pc_.resize(default_size);
@@ -31,20 +29,17 @@ std::vector<int> B_ = {13,-7,5};//ビットシフトパターン
 std::vector<int> B_1 = {5,-7,13};//ビットシフトパターン(逆関数用)
 //先行研究のビットシフトパターン
 //{26,-5,6}{7,-30,1}{7,-6}
-
-
 uint64_t hash_use = 0;//配列P,C の使用数
-int k = (std::log(default_size)/std::log(2)) + 8;//mask値の決定のため、P, C 拡張時にインクリメント
 
 public:
 struct DataItem {
     int p,c;
     DataItem(): p(invalid),c(invalid){}
 };
-std::vector<DataItem> pc_ ;//P,C配列
 std::vector<bool> exists;//空判定配列
-//再配置が起こるタイミングの番号を保存、シード値を更新する
-//setとexpandで共有する配列 "place[旧index] = 新index"
+std::vector<DataItem> pc_ ;//P,C配列
+int k = (std::log(default_size)/std::log(2)) + 8;//mask値の決定のため、P, C 拡張時にインクリメント
+int replace_time = 0;
 
 private:
 int expand(int node){
@@ -118,9 +113,6 @@ int get_parent(int t){//子の状態番号→出力値→シード値→親番�
     if(t == 0){
         return -1;
     }
-    if(exists[t] == false){
-        return -1;
-    }
     else{
         uint64_t seed = get_seed(t);
         return seed >> 8;
@@ -131,24 +123,7 @@ uint8_t get_charcode(int t){//子の状態番号→出力値→シード値→�
     return seed % 256;
 }
 
-
 public:
-void display(){
-    int collision_max = 0;
-    for(uint64_t i = 1; i < pc_.size();i++){
-        //使用要素のみ表示
-        if(exists[i]){
-            if(collision_max < pc_[i].c){
-                collision_max = pc_[i].c;
-            }
-            //std::cout << i << "    " << exists[i] << "       ";
-            //std::cout << pc_[i].p << "  |  " << pc_[i].c << "  " << get_charcode(i) << std::endl;
-            //配列番号
-        }
-    }
-    //std::cout << "collision_max" << collision_max << std::endl;
-    //std::cout << "mask :" << k << std::endl;
-}
 
 int get_parity(uint64_t x)const override{//引数シード値
     uint64_t x1 = xos(x);
@@ -165,20 +140,6 @@ int get_parity(uint64_t x)const override{//引数シード値
 	return -1;
 }
 
-int get_collision(uint64_t x)const override{//引数シード値
-    uint64_t x1 = xos(x);
-    int t = x1 >> 8;//遷移先
-    int parity = x1 % 256;
-    while(exists[t]){//使用済みならば再Xos
-        if(pc_[t].p == parity){
-            return pc_[t].c;
-        }
-        x1 = xos(x1);//
-        t = x1 >> 8;//遷移先
-        parity = x1 % 256;
-    }
-	return -1;
-}
 int get_nextnode(uint64_t x)const{//引数シード値
 	uint64_t x1 = xos(x);
     int t = x1 >> 8;//遷移先
@@ -250,8 +211,8 @@ int set(int node,uint8_t c){//引数 : シード値
     //std::cout << load_factor <<  " % " << std::endl;
     //keyによる探索の期待計算量が、負荷率をqとしてO(1/(1-q))になる
     if(load_factor >= 50){
+        replace_time++;
         node = expand(node);
-        std::cout <<  "replace" << std::endl;
         uint64_t load_factor2 = hash_use*100/pc_.size();
     }
     uint64_t seed = create_seed(node,c);

@@ -24,6 +24,10 @@ int create_seed(int node, uint8_t c)const{
 
 public:
 int node_count = 0; 
+int common = 0;
+int c_max;
+int mask;
+int re_take;
 
 bool contains_all(const std::vector<std::string>& str_list, int size) {
 
@@ -60,6 +64,7 @@ void xor_try(const std::string& str) {
         if(t != -1){    
             node = t;
             //std::cout << "--common--" << "\n";
+            common++;
         }
         else{
             node = shift.set(node,c);
@@ -71,9 +76,27 @@ void xor_try(const std::string& str) {
     //終端文字格納
     shift.set(node,kLeafChar);
     node_count++;
-    //shift.display();
     //std::cout << "node : " << node_count << std::endl;
+    mask = shift.k;
+    re_take = shift.replace_time;
 }
+
+void display(){
+    for(uint64_t i = 1; i < shift.pc_.size();i++){
+        //使用要素のみ表示
+        if(shift.exists[i]){
+            if(c_max < shift.pc_[i].c){
+                c_max = shift.pc_[i].c;
+            }
+            //std::cout << i << "    " << exists[i] << "       ";
+            //std::cout << pc_[i].p << "  |  " << pc_[i].c << "  " << get_charcode(i) << std::endl;
+            //配列番号
+        }
+    }
+    std::cout << "collision_max" << c_max << std::endl;
+    //std::cout << "mask :" << k << std::endl;
+}
+
 
 
 };
