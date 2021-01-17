@@ -8,15 +8,14 @@ namespace kuroda {
 
 class XorshiftInterface {
 public:
-   virtual int get_parity(uint64_t x)const = 0;
-   
+   virtual int get_nextnode(int node,uint8_t c)const = 0;
    virtual int set(int node,uint8_t c) = 0;
 };
 
 class Xorshift : public XorshiftInterface{
 public:
 static constexpr int invalid = -1;
-static constexpr int default_size = 1 << 21;
+static constexpr uint64_t default_size = 1 << 4;
 	
 Xorshift(){
 	pc_.resize(default_size);
@@ -61,7 +60,7 @@ int expand(int node){
     k++;//最終的に、マスク＋１に更新する
     pc_ = std::move(pc_2);
     exists = std::move(exists2);
-    //display();
+    //display1();
     return place[node];
 } 
 
@@ -76,7 +75,6 @@ int replace(int node,std::vector<int>& place,std::vector<DataItem>& pc_2,std::ve
         replace(parent,place,pc_2,exists2);
     }    
     seed = (place[parent] << 8 ) + c;
-
     k++;//mask更新
     uint64_t x1 = xos(seed);
     int new_node = x1 >> 8;
@@ -109,6 +107,7 @@ int get_seed(int t)const{//配列番号、パリティ値、衝突回数から�
     return seed;
 }//ここから、親と遷移文字が分かる
 
+/*
 int get_parent(int t){//子の状態番号→出力値→シード値→親番号
     if(t == 0){
         return -1;
@@ -123,8 +122,6 @@ uint8_t get_charcode(int t){//子の状態番号→出力値→シード値→�
     return seed % 256;
 }
 
-public:
-
 int get_parity(uint64_t x)const override{//引数シード値
     uint64_t x1 = xos(x);
     int t = x1 >> 8;//遷移先
@@ -138,22 +135,7 @@ int get_parity(uint64_t x)const override{//引数シード値
         parity = x1 % 256;
     }
 	return -1;
-}
-
-int get_nextnode(uint64_t x)const{//引数シード値
-	uint64_t x1 = xos(x);
-    int t = x1 >> 8;//遷移先
-    int parity = x1 % 256;
-    while(exists[t]){//使用済みならば再Xos
-        if(pc_[t].p == parity){
-            return t;
-        }
-        x1 = xos(x1);//
-        t = x1 >> 8;//遷移先
-        parity = x1 % 256;
-    }
-	return -1;
-}
+}*/
 
 private:
 uint64_t xos(uint64_t x)const{//前&x
@@ -203,7 +185,6 @@ int create_seed(int node, uint8_t c)const{
     return (node << 8) + c;
 }
 
-
 public:
 //配列P,Cに要素を格納、衝突が起これば再配置
 int set(int node,uint8_t c){//引数 : シード値
@@ -211,6 +192,7 @@ int set(int node,uint8_t c){//引数 : シード値
     //std::cout << load_factor <<  " % " << std::endl;
     //keyによる探索の期待計算量が、負荷率をqとしてO(1/(1-q))になる
     if(load_factor >= 50){
+        //std::cout << "-----replace----" << "\n";
         replace_time++;
         node = expand(node);
         uint64_t load_factor2 = hash_use*100/pc_.size();
@@ -232,6 +214,38 @@ int set(int node,uint8_t c){//引数 : シード値
 	hash_use++;
     return node;
 }
+
+int get_nextnode(int node,uint8_t c)const{//引数シード値
+    uint64_t seed = create_seed(node,c);
+	uint64_t x1 = xos(seed);
+    int t = x1 >> 8;//遷移先
+    int parity = x1 % 256;
+    while(exists[t]){//使用済みならば再Xos
+        if(pc_[t].p == parity){
+            return t;
+        }
+        x1 = xos(x1);//
+        t = x1 >> 8;//遷移先
+        parity = x1 % 256;
+    }
+	return -1;
+}
+
+
+void display1(){
+    int node = 0;
+    for(uint64_t i = 1; i < pc_.size();i++){
+        //使用要素のみ表示
+        if(exists[i]){
+            node++;
+            //std::cout << i << "    " << exists[i] << "       ";
+            //std::cout << pc_[i].p << "  |  " << pc_[i].c << "  " << get_charcode(i) << std::endl;
+            //配列番号
+        }
+    }
+    std::cout << "node :" << node << std::endl;
+}
+
 
 };
 

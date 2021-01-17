@@ -37,6 +37,7 @@ template <class Process>
 
 int main(int argc, char* argv[]){
     int num = 0;
+    //std::string input_name = "s2.txt";
     std::string input_name = "wordnet-3.0-word";
     //std::string input_name = "enwiki-20150205.line";
     //std::string input_name = "ipadic-word";
