@@ -2,3 +2,5 @@ black
 blue
 green
 red
+cyan
+yellow
